@@ -7,7 +7,8 @@ public class GetHit : MonoBehaviour
     [Tooltip("Determines when the player is taking damage.")]
     public bool hurt = false;
     public int health = 3;
-    
+    public int baseHealth = 3;
+    private int coins = 0;
     
     private bool slipping = false;
     private PlayerMovement playerMovementScript;
@@ -59,9 +60,19 @@ public class GetHit : MonoBehaviour
             }
         }
     }
+    
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.gameObject.CompareTag("Coin"))
+        {
+            CollectCoin();
+        }
+    }
+    
     private void TakeDamage()
     {
         health--;
+        Debug.Log("Player Health:" + health);
         hurt = true;
         playerMovementScript.playerStats.canMove = false;
         playerMovementScript.soundManager.PlayHitSound();
@@ -72,5 +83,25 @@ public class GetHit : MonoBehaviour
         yield return new WaitForSeconds(0.75f);
         hurt = false;
         playerMovementScript.playerStats.canMove = true;
+    }
+    
+    private void CollectCoin()
+    {
+        coins++;
+        Debug.Log("Coins collected: " + coins);
+        if (coins >= 10)
+        {
+            RestoreHealth();
+            coins = 0; // Reset coins after gaining health
+        }
+    }
+    
+    private void RestoreHealth()
+    {
+        if (health < baseHealth)
+        {
+            health++;
+            Debug.Log("Health restored! Current Health: " + health);
+        }
     }
 }

@@ -4,7 +4,6 @@ using UnityEngine;
 
 public class RefactorEnemyFinished_Alt : MonoBehaviour
 {
-
     /// <summary>
     /// Contains tunable parameters to tweak the enemy's movement and behavior.
     /// </summary>
@@ -20,7 +19,11 @@ public class RefactorEnemyFinished_Alt : MonoBehaviour
 
         [Tooltip("How fast the enemy runs after the player (only when idle is false).")]
         public float chaseSpeed;
+
+        [Tooltip("How fast the enemy flees from the player (only when idle is false and player health is at maximum).")]
+        public float fleeSpeed;
     }
+
     public Stats enemyStats;
 
     //The transform that will lock onto the player once the enemy has spotted them.
@@ -30,7 +33,7 @@ public class RefactorEnemyFinished_Alt : MonoBehaviour
     private bool idle = true;
 
     private bool slipping = false;
-    
+
     private float facing;
 
     private Rigidbody rb;
@@ -41,25 +44,33 @@ public class RefactorEnemyFinished_Alt : MonoBehaviour
 
     private ProximityExplodeFinished explodeBehavior;
 
-
+    private GetHit playerHealth;
 
     private void Start()
     {
         rb = GetComponent<Rigidbody>();
         patrolBehavior = GetComponent<PatrolFinished>();
         explodeBehavior = GetComponent<ProximityExplodeFinished>();
+        playerHealth = GameObject.FindGameObjectWithTag("Player").GetComponent<GetHit>();
     }
 
     private void Update()
     {
-        // changes the enemy's behavior: pacing in circles or chasing the player
+        // changes the enemy's behavior: pacing in circles, chasing the player, or fleeing from the player
         if (idle)
         {
             patrolBehavior.Move(enemyStats.walkSpeed);
         }
         else
         {
-            Chase();
+            if (playerHealth.health == playerHealth.baseHealth)
+            {
+                Flee();
+            }
+            else
+            {
+                Chase();
+            }
             if (explodeBehavior.CheckForExplosion(player.transform))
             {
                 idle = true;
@@ -83,6 +94,15 @@ public class RefactorEnemyFinished_Alt : MonoBehaviour
         sight.position = new Vector3(player.transform.position.x, transform.position.y, player.transform.position.z);
         transform.LookAt(sight);
         transform.position = Vector3.MoveTowards(transform.position, player.transform.position, Time.deltaTime * enemyStats.chaseSpeed);
+    }
+
+    private void Flee()
+    {
+        //Flee from the player
+        Vector3 directionToFlee = transform.position - player.transform.position;
+        directionToFlee.y = 0; // Keep the enemy at the same height
+        transform.rotation = Quaternion.LookRotation(directionToFlee);
+        transform.position = Vector3.MoveTowards(transform.position, transform.position + directionToFlee, Time.deltaTime * enemyStats.fleeSpeed);
     }
 
     private void OnCollisionEnter(Collision other)
